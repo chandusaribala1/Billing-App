@@ -10,29 +10,39 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
 @Configuration
 public class SecurityConfig {
+
     private final JwtAuthenticationFilter jwtFilter;
-  public SecurityConfig(JwtAuthenticationFilter jwtFilter)
-  {
-     this.jwtFilter=jwtFilter;
-  }
-  @Bean public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-    http.csrf(csrf->csrf.disable())
-      .authorizeHttpRequests(auth->auth.requestMatchers("/auth/**").permitAll().requestMatchers("/reports/**").hasAnyRole("ADMIN","ACCOUNTANT")
-        .requestMatchers("/products/**","/customers/**","/invoices/**","/payments/**").hasAnyRole("ADMIN","ACCOUNTANT")
-        .anyRequest().authenticated())
-      .sessionManagement(sm->sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-      .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
-    return http.build();
-  }
-  @Bean public PasswordEncoder passwordEncoder()
-  {
-     return new BCryptPasswordEncoder();
-  }
-  @Bean public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception 
-  {
-     return config.getAuthenticationManager(); 
+
+    public SecurityConfig(JwtAuthenticationFilter jwtFilter) {
+        this.jwtFilter = jwtFilter;
     }
 
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http.csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/users/**").hasRole("ADMIN")
+                        .requestMatchers("/reports/**").hasAnyRole("ADMIN","ACCOUNTANT")
+                        .requestMatchers("/products/**","/customers/**","/invoices/**","/payments/**").hasAnyRole("ADMIN","ACCOUNTANT")
+                        .requestMatchers("/invoices/me","/payments/me").hasRole("CUSTOMER")
+                        .anyRequest().authenticated())
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
 }
